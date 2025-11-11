@@ -1,0 +1,364 @@
+const items = $input.all();
+
+// Función para formatear valores monetarios correctamente
+function formatearValor(valor) {
+  if (!valor && valor !== 0) return '';
+  let valorLimpio = String(valor).replace(/\$/g, '').replace(/\./g, '').replace(/,/g, '.');
+  let numero = parseFloat(valorLimpio);
+  if (isNaN(numero)) return valor;
+  return numero.toLocaleString('es-CO', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+// Función para obtener el valor numérico sin formateo
+function obtenerValorNumerico(valor) {
+  if (!valor && valor !== 0) return 0;
+  let valorLimpio = String(valor).replace(/\$/g, '').replace(/\./g, '').replace(/,/g, '.');
+  let numero = parseFloat(valorLimpio);
+  return isNaN(numero) ? 0 : numero;
+}
+
+// Agrupar todos los items por número de planilla
+const planillas = {};
+
+items.forEach(item => {
+  const data = item.json;
+  const numeroPlanilla = data['No. Planilla'] || data.planilla || 'SIN_PLANILLA';
+
+  if (!planillas[numeroPlanilla]) {
+    planillas[numeroPlanilla] = {
+      items: []
+    };
+  }
+
+  // Agregar el item a la planilla correspondiente
+  planillas[numeroPlanilla].items.push({
+    nOrden: data['No.'],
+    nOrdenCuenta: data['No. Orden de pago'],
+    nFactura: data['No. Factura'],
+    conceptoDescripcion: data['Concepto'],
+    nDocIdentidad: data['No. doc Identidad'],
+    nombreCausacion: data['Nombre Causacion'],
+    ciudad: data['Ciudad'],
+    valorBruto: data['Valor Bruto'],
+    otrosDescuentos: data['V/r Otros descuentos'],
+    notaCredito: data['Nota Credito'],
+    observaciones: data['Observaciones'],
+    formaPago: data['Forma de Pago'],
+    nitCC: data['NIT o CC'],
+    nombre: data['Nombre'],
+    k1: data['#1'],
+    k2: data['#2'],
+    banco: data['Banco'],
+    nCuenta: data['No. Cuenta'],
+    tipoCuenta: data['Tipo de cuenta'],
+    valorNeto: data['Valor Neto']
+  });
+});
+
+// Generar un HTML por cada planilla
+const result = Object.keys(planillas).map(numeroPlanilla => {
+  const facturaData = {
+    empresa: "Fiduoccidente",
+    logo: "https://example.com/logo.png",
+    proyecto: "PROYECTO CONDOMINIO GRAN RESERVA II",
+    fideicomiso: "FIDEICOMISO FIDUOCCIDENTE 210800",
+    fecha: new Date().toLocaleDateString('es-CO'),
+    planilla: numeroPlanilla,
+    instruccion: "Causación y Pago",
+    retencionPago: "",
+    items: planillas[numeroPlanilla].items
+  };
+
+  // Calcular totales
+  const totalBruto = facturaData.items.reduce((sum, item) => sum + obtenerValorNumerico(item.valorBruto), 0);
+  const totalNeto = facturaData.items.reduce((sum, item) => sum + obtenerValorNumerico(item.valorNeto), 0);
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Factura - ${facturaData.proyecto}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 10px;
+      padding: 20px;
+      background: white;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #003d7a;
+    }
+
+    .logo-section img {
+      height: 50px;
+    }
+
+    .title-section {
+      text-align: center;
+      flex: 1;
+    }
+
+    .title-section h1 {
+      font-size: 12px;
+      color: #003d7a;
+      margin-bottom: 3px;
+    }
+
+    .title-section h2 {
+      font-size: 11px;
+      color: #333;
+    }
+
+    .info-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+    }
+
+    .info-item {
+      display: flex;
+      gap: 10px;
+    }
+
+    .info-item label {
+      font-weight: bold;
+      color: #003d7a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 7px;
+      table-layout: fixed;
+    }
+
+    th {
+      background: #003d7a;
+      color: white;
+      padding: 6px 3px;
+      text-align: left;
+      font-size: 7px;
+      font-weight: bold;
+      border: 1px solid #002d5a;
+      word-wrap: break-word;
+    }
+
+    td {
+      padding: 5px 3px;
+      border: 1px solid #ddd;
+      font-size: 7px;
+      word-wrap: break-word;
+      overflow: hidden;
+    }
+
+    /* Anchos específicos para cada columna */
+    th:nth-child(1), td:nth-child(1) { width: 2%; }    /* N° */
+    th:nth-child(2), td:nth-child(2) { width: 3%; }    /* N° Orden Pago */
+    th:nth-child(3), td:nth-child(3) { width: 3%; }    /* N° Factura */
+    th:nth-child(4), td:nth-child(4) { width: 8%; }    /* Concepto */
+    th:nth-child(5), td:nth-child(5) { width: 4%; }    /* N° Doc Identidad */
+    th:nth-child(6), td:nth-child(6) { width: 8%; }    /* Nombre Causación */
+    th:nth-child(7), td:nth-child(7) { width: 4%; }    /* Ciudad */
+    th:nth-child(8), td:nth-child(8) { width: 7%; }    /* Valor Bruto - MÁS ANCHO */
+    th:nth-child(9), td:nth-child(9) { width: 4%; }    /* V/r Otros Descuentos */
+    th:nth-child(10), td:nth-child(10) { width: 4%; }  /* Nota Crédito */
+    th:nth-child(11), td:nth-child(11) { width: 6%; }  /* Observaciones */
+    th:nth-child(12), td:nth-child(12) { width: 5%; }  /* Forma de Pago */
+    th:nth-child(13), td:nth-child(13) { width: 4%; }  /* NIT o CC */
+    th:nth-child(14), td:nth-child(14) { width: 8%; }  /* Nombre */
+    th:nth-child(15), td:nth-child(15) { width: 2%; }  /* #1 */
+    th:nth-child(16), td:nth-child(16) { width: 2%; }  /* #2 */
+    th:nth-child(17), td:nth-child(17) { width: 5%; }  /* Banco */
+    th:nth-child(18), td:nth-child(18) { width: 5%; }  /* N° Cuenta */
+    th:nth-child(19), td:nth-child(19) { width: 4%; }  /* Tipo Cuenta */
+    th:nth-child(20), td:nth-child(20) { width: 7%; }  /* Valor Neto - MÁS ANCHO */
+
+    /* Estilo específico para celdas de valores monetarios */
+    .valor-monetario {
+      text-align: right;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    .total-row {
+      background: #e8f4f8 !important;
+      font-weight: bold;
+    }
+
+    .footer {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .signature-box {
+      border-top: 1px solid #333;
+      padding-top: 5px;
+      text-align: center;
+      font-size: 9px;
+    }
+
+    @media print {
+      body {
+        padding: 10px;
+      }
+
+      table {
+        font-size: 6px;
+      }
+
+      th, td {
+        padding: 3px 2px;
+        font-size: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-section">
+      <img src="${facturaData.logo}" alt="${facturaData.empresa}">
+    </div>
+    <div class="title-section">
+      <h1>${facturaData.fideicomiso}</h1>
+      <h2>${facturaData.proyecto}</h2>
+    </div>
+  </div>
+
+  <div class="info-bar">
+    <div class="info-item">
+      <label>FECHA:</label>
+      <span>${facturaData.fecha}</span>
+    </div>
+    <div class="info-item">
+      <label>PLANILLA N°:</label>
+      <span>${facturaData.planilla}</span>
+    </div>
+    <div class="info-item">
+      <label>INSTRUCCIÓN A REALIZAR:</label>
+      <span>${facturaData.instruccion}</span>
+    </div>
+    <div class="info-item">
+      <label>RETENCIÓN DE PAGO:</label>
+      <span>${facturaData.retencionPago}</span>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>N°</th>
+        <th>N° Orden Pago</th>
+        <th>N° Factura</th>
+        <th>Concepto</th>
+        <th>N° Doc Identidad</th>
+        <th>Nombre Causación</th>
+        <th>Ciudad</th>
+        <th>Valor Bruto</th>
+        <th>V/r Otros Descuentos</th>
+        <th>Nota Crédito</th>
+        <th>Observaciones</th>
+        <th>Forma de Pago</th>
+        <th>NIT o CC</th>
+        <th>Nombre</th>
+        <th>#1</th>
+        <th>#2</th>
+        <th>Banco</th>
+        <th>N° Cuenta</th>
+        <th>Tipo Cuenta</th>
+        <th>Valor Neto</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${facturaData.items.map((item, index) => `
+      <tr>
+        <td>${item.nOrden || index + 1}</td>
+        <td>${item.nOrdenCuenta || ''}</td>
+        <td>${item.nFactura || ''}</td>
+        <td>${item.conceptoDescripcion || ''}</td>
+        <td>${item.nDocIdentidad || ''}</td>
+        <td>${item.nombreCausacion || ''}</td>
+        <td>${item.ciudad || ''}</td>
+        <td class="valor-monetario">$${formatearValor(item.valorBruto)}</td>
+        <td>${item.otrosDescuentos || ''}</td>
+        <td>${item.notaCredito || ''}</td>
+        <td>${item.observaciones || ''}</td>
+        <td>${item.formaPago || ''}</td>
+        <td>${item.nitCC || ''}</td>
+        <td>${item.nombre || ''}</td>
+        <td>${item.k1 || ''}</td>
+        <td>${item.k2 || ''}</td>
+        <td>${item.banco || ''}</td>
+        <td>${item.nCuenta || ''}</td>
+        <td>${item.tipoCuenta || ''}</td>
+        <td class="valor-monetario">$${formatearValor(item.valorNeto)}</td>
+      </tr>
+      `).join('')}
+      <tr class="total-row">
+        <td colspan="7" style="text-align: right; font-weight: bold;">TOTAL:</td>
+        <td class="valor-monetario" style="font-weight: bold;">$${formatearValor(totalBruto)}</td>
+        <td colspan="11"></td>
+        <td class="valor-monetario" style="font-weight: bold;">$${formatearValor(totalNeto)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <div class="signature-box">
+      <div>Elaboró</div>
+      <div style="margin-top: 40px;">_______________________</div>
+      <div>Nombre y Firma</div>
+    </div>
+    <div class="signature-box">
+      <div>Revisó</div>
+      <div style="margin-top: 40px;">_______________________</div>
+      <div>Nombre y Firma</div>
+    </div>
+    <div class="signature-box">
+      <div>Aprobó</div>
+      <div style="margin-top: 40px;">_______________________</div>
+      <div>Nombre y Firma</div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  return {
+    json: {
+      html: html,
+      facturaData: facturaData,
+      numeroPlanilla: numeroPlanilla,
+      totalItems: facturaData.items.length
+    }
+  };
+});
+
+return result;
