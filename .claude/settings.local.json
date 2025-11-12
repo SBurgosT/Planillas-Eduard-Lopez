@@ -9,7 +9,11 @@
       "Bash(del tailwind.config.ts)",
       "Bash(npm uninstall:*)",
       "Bash(taskkill:*)",
-      "Bash(python procesar_clientes.py:*)"
+      "Bash(python procesar_clientes.py:*)",
+      "Bash(dir /b /s \"c:\\Users\\sbt08\\Documents\\Planillas Eduard Lopez\\planilla-frontend\")",
+      "Bash(findstr:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
