@@ -222,7 +222,7 @@ export default function PlanillaForm() {
 
       console.log("Enviando factura a n8n:", datosFactura);
 
-      // Enviar al webhook de n8n
+      // Enviar al webhook de n8n y esperar la respuesta
       const response = await fetch(
         "https://n8n-n8n.pu3ek7.easypanel.host/webhook/2c306f58-745f-4513-80c5-032bb2548db2",
         {
@@ -241,33 +241,46 @@ export default function PlanillaForm() {
       const data = await response.json();
       console.log("Respuesta de n8n:", data);
 
-      // Agregar la factura a la lista de facturas registradas
-      const nuevaFactura: FacturaRegistrada = {
-        id: Date.now().toString(),
-        noFactura: formData.noFactura,
-        nombre: formData.nombre,
-        valorPagar: formData.valorPagar,
-      };
+      // Verificar el status de la respuesta
+      if (data.status === "fail") {
+        // Si la factura ya existe, mostrar alerta de error
+        setAlertType("error");
+        setAlertMessage(data.message || `La factura ${formData.noFactura} ya existe`);
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 5000);
+        return; // No agregar la factura a la lista
+      }
 
-      setFacturasRegistradas((prev) => [...prev, nuevaFactura]);
+      // Si el status es success, continuar con el registro
+      if (data.status === "success") {
+        // Agregar la factura a la lista de facturas registradas
+        const nuevaFactura: FacturaRegistrada = {
+          id: Date.now().toString(),
+          noFactura: formData.noFactura,
+          nombre: formData.nombre,
+          valorPagar: formData.valorPagar,
+        };
 
-      console.log("Datos del formulario:", formData);
+        setFacturasRegistradas((prev) => [...prev, nuevaFactura]);
 
-      // Mostrar alerta de éxito
-      setAlertType("success");
-      setAlertMessage("Factura registrada exitosamente");
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
+        console.log("Datos del formulario:", formData);
 
-      // Resetear formulario (manteniendo el número de planilla)
-      setFormData({
-        numeroPlanilla: formData.numeroPlanilla,
-        observaciones: "",
-        noFactura: "",
-        nit: "",
-        nombre: "",
-        valorPagar: "",
-      });
+        // Mostrar alerta de éxito con el mensaje del webhook
+        setAlertType("success");
+        setAlertMessage(data.message || "Factura registrada exitosamente");
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 3000);
+
+        // Resetear formulario (manteniendo el número de planilla)
+        setFormData({
+          numeroPlanilla: formData.numeroPlanilla,
+          observaciones: "",
+          noFactura: "",
+          nit: "",
+          nombre: "",
+          valorPagar: "",
+        });
+      }
     } catch (error) {
       console.error("❌ Error al registrar la factura:", error);
       setAlertType("error");
@@ -398,8 +411,65 @@ export default function PlanillaForm() {
     }));
   };
 
-  const eliminarFactura = (id: string) => {
-    setFacturasRegistradas((prev) => prev.filter((factura) => factura.id !== id));
+  const eliminarFactura = async (id: string) => {
+    try {
+      // Buscar la factura que se va a eliminar para enviar sus datos al webhook
+      const facturaAEliminar = facturasRegistradas.find((factura) => factura.id === id);
+
+      if (!facturaAEliminar) {
+        console.error("❌ Factura no encontrada");
+        return;
+      }
+
+      // Preparar datos para enviar al webhook
+      const datosEliminacion = {
+        noFactura: facturaAEliminar.noFactura,
+        nombre: facturaAEliminar.nombre,
+        valorPagar: facturaAEliminar.valorPagar,
+        numeroPlanilla: formData.numeroPlanilla,
+        fechaEliminacion: new Date().toISOString(),
+      };
+
+      console.log("Enviando eliminación a n8n:", datosEliminacion);
+
+      // Llamar al webhook de eliminación
+      const response = await fetch(
+        "https://n8n-n8n.pu3ek7.easypanel.host/webhook/895570dd-0c38-4c6f-8e64-1e2ff6fff828",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(datosEliminacion),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("❌ Error al notificar la eliminación al webhook");
+        // Continuar con la eliminación aunque falle el webhook
+      } else {
+        const data = await response.json();
+        console.log("✅ Respuesta del webhook de eliminación:", data);
+      }
+
+      // Eliminar la factura de la lista
+      setFacturasRegistradas((prev) => prev.filter((factura) => factura.id !== id));
+
+      // Mostrar alerta de éxito
+      setAlertType("success");
+      setAlertMessage("Factura eliminada exitosamente");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    } catch (error) {
+      console.error("❌ Error al eliminar la factura:", error);
+      // Eliminar la factura de todas formas, incluso si falla el webhook
+      setFacturasRegistradas((prev) => prev.filter((factura) => factura.id !== id));
+
+      setAlertType("error");
+      setAlertMessage("Factura eliminada localmente, pero hubo un error al notificar al servidor");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 5000);
+    }
   };
 
   // Calcular el total de todas las facturas
