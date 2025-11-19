@@ -13,7 +13,13 @@
       "Bash(dir /b /s \"c:\\Users\\sbt08\\Documents\\Planillas Eduard Lopez\\planilla-frontend\")",
       "Bash(findstr:*)",
       "Bash(find:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(dir:*)",
+      "Bash(node -e:*)",
+      "Bash(timeout /t 5)",
+      "Bash(ping:*)",
+      "Bash(nslookup:*)",
+      "Bash(timeout /t 3)"
     ],
     "deny": [],
     "ask": []

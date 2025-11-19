@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 interface FormData {
   numeroPlanilla: string;
@@ -25,6 +26,7 @@ const OBSERVACIONES_OPTIONS = [
 ];
 
 export default function PlanillaForm() {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     numeroPlanilla: "",
     observaciones: "",
@@ -690,6 +692,29 @@ export default function PlanillaForm() {
             </div>
           </div>
         )}
+
+        {/* Botón Regresar */}
+        <div className="mb-8">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#E31E24] to-[#B01820] text-white font-semibold rounded-lg hover:from-[#B01820] hover:to-[#8F1419] transition-all duration-200 shadow-md hover:shadow-lg"
+          >
+            <svg
+              className="w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            <span>Volver al Dashboard</span>
+          </button>
+        </div>
 
         {/* Header */}
         <div className="text-center mb-8">

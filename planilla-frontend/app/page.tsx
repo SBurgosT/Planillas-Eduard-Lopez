@@ -1,5 +1,5 @@
-import PlanillaForm from "@/components/PlanillaForm";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <PlanillaForm />;
+  redirect("/dashboard");
 }
